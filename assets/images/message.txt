@@ -1,106 +1,28 @@
-import React, { useState } from "react";
-import {router} from 'expo-router'
-import { View, StyleSheet, Alert } from "react-native";
-import { TextInput, IconButton,Button as Bt } from "react-native-paper";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/config/firebase";
-import { Link, useRouter } from "expo-router";
-import Button from "@/components/ui/Button";
+txt 2 : page 18 du document
+q1: question de société du regard des autres de la hiérarchie, et la liste de la fin du texte
+q2: Les convives deviennent agréables ou désagréables car la réflexion commence et les échanges se font
+q3: le corps car il est rassasié, et l'âme car si le repas est bien mené ca signifie que l'échange avec les autres s'est bien déroulé.
 
-const LoginScreen = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [secureText, setSecureText] = useState(true);
-  const [loading, setLoading] = useState(false);
+culture de la table est distingué de la nécessité de manger pour vivre. car les plaisir de la table sont facultatif, au début du repas on mange comme un animale puis on parle dès le milieu du repas. le besoin est un plaisir intense et cours, tandis que le discours est un plaisir plus long moins intense. 
+
+txt 5 : page 27 du document
+q1: se nettoyer les mains
+q2: Par politesse = il ne dois pas attrister ou paraitre triste, il doit se tenir droit pour pas qu'on puisse penser qu'il s'apprête a flatuler, il ne doit pas avoir les coudes sur la table sinon il paraitrai faible.
+q3: malpoli ? a rome fait comme les romains ou qq chose comme ca 
+extrêmement codifié => perception des autres + catholique => prière a une image de jesus ou de la personne la plus respectable => Hiérarchisation. 
+
+posture + émotions : faut être joyeux, contexte chrétien : prière très codifiée. tout les thèmes de politesse avec le respect des hiérarchies sociales. les manières servent a distinguer.
+
+txt 13 : page 56 du document 
+
+le thème du manger pour manger, jusqu'à devenir malade. On mange sans apétit. lvl 1 naturel, lvl 2 culturel lvl 3 horrible. Choix des morceaux avec les personnalités qui s'exprimes, aussi une concurrence si deux personnes aime la même partie. Les jeux sociaux s'exprimes. La sociabilité avec la faiblesse. 
+Le thème du rôle sociale: la cuisse de poulet = la cuisse de la femme.
+
+txt 15 : page 60 du document	
+le pb comment sont les conditions de travail en cuisine au 17eme, elles sont extrêmement difficile => Vatel se suicide pour une question d'honneur
+
+txt 30 : page 107 du document
 
 
-  const goToRegister = () => {
-    router.push("/(auth)/register");
-  }
-  const goTodashboard = () => {
-    router.replace("/dashboard");
-  }
-  const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert("Erreur", "Veuillez remplir tous les champs.");
-      return;
-    }
 
-    setLoading(true);
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      Alert.alert("Succès", "Connexion réussie !");
-      router.replace("/dashboard")
-      // Redirection ou mise à jour de l'état après connexion
-    } catch (error) {
-      Alert.alert("Erreur", (error as Error).message);
-    }
-    setLoading(false);
-  };
-
-  return (
-    <View style={styles.container}>
-      <Button label=" il est quoi" onPress={goTodashboard}/>
-      <Button label=" il est oùùùùùùùùù"theme="primary" onPress={goToRegister}/>
-      <TextInput
-        label="Adresse e-mail"
-        value={email}
-        onChangeText={setEmail}
-        mode="outlined"
-        keyboardType="email-address"
-        autoCapitalize="none"
-        style={styles.input}
-      />
-
-      <View style={styles.passwordContainer}>
-        <TextInput
-          label="Mot de passe"
-          value={password}
-          onChangeText={setPassword}
-          mode="outlined"
-          secureTextEntry={secureText}
-          autoCapitalize="none"
-          style={styles.passwordInput}
-        />
-        <IconButton
-          icon={secureText ? "eye-off" : "eye"}
-          onPress={() => setSecureText(!secureText)}
-        />
-      </View>
-
-      <Bt
-        mode="contained"
-        onPress={handleLogin}
-        loading={loading}
-        disabled={loading}
-        style={styles.button}
-      >
-        Se connecter
-      </Bt>
-    </View>
-  );
-};
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    padding: 20,
-    backgroundColor: "#f4f4f4",
-  },
-  input: {
-    marginBottom: 10,
-  },
-  passwordContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  passwordInput: {
-    flex: 1,
-  },
-  button: {
-    marginTop: 20,
-  },
-});
-
-export default LoginScreen;
+Description d'iamge : décor => personnages => action 

@@ -18,12 +18,22 @@ export default function Index() {
     auth.signOut();
   }
 
+  const goToTickets = () => {
+    router.replace("/tickets")
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.text}>Dashboard Screen</Text>
       <Pressable onPress={signOut}>
         <Text style={{color:'#fff'}}>
           Se déconnecter
+        </Text>
+      </Pressable>
+
+      <Pressable onPress={goToTickets}>
+        <Text style={{color:'#ff0000'}}>
+          Accéder à l'espace des tickets
         </Text>
       </Pressable>
     </View>

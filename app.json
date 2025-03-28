@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "AP4-React-Native",
-    "slug": "AP4-React-Native",
+    "slug": "ticket-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -15,7 +15,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.mathiskasp.ticketapp"
     },
     "web": {
       "bundler": "metro",
@@ -36,6 +37,15 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "a27cceb8-8134-41c3-b0e5-5f4e53c09b32"
+      }
+    },
+    "owner": "mathiskasp"
   }
 }

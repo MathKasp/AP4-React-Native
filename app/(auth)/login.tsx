@@ -40,8 +40,8 @@ const LoginScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Button label=" il est quoi" onPress={goTodashboard}/>
-      <Button label=" il est oùùùùùùùùù"theme="primary" onPress={goToRegister}/>
+      <Button label=" Je suis tout pâle" onPress={goTodashboard}/>
+      <Button label=" toiiiiiiiiiiii"theme="primary" onPress={goToRegister}/>
       <TextInput
         label="Adresse e-mail"
         value={email}
