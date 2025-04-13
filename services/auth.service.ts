@@ -1,15 +1,9 @@
-// import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/config/config";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, UserCredential } from "firebase/auth";
 
-
-// export const auth = getAuth();
-// createUserWithEmailAndPassword(auth, email, password)
-//   .then((userCredential) => {
-//     // Signed up 
-//     const user = userCredential.user;
-//     // ...
-//   })
-//   .catch((error) => {
-//     const errorCode = error.code;
-//     const errorMessage = error.message;
-//     // ..
-//   });
+export const signin = (
+    email:string,
+    password:string
+):Promise<UserCredential> => {
+    return signInWithEmailAndPassword(auth,email,password)
+}

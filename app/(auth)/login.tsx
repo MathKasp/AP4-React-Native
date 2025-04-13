@@ -18,7 +18,7 @@ const LoginScreen = () => {
     router.push("/(auth)/register");
   }
   const goTodashboard = () => {
-    router.replace("/dashboard");
+    router.replace("/(app)");
   }
   const handleLogin = async () => {
     if (!email || !password) {
@@ -30,7 +30,7 @@ const LoginScreen = () => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       Alert.alert("Succès", "Connexion réussie !");
-      router.replace("/dashboard")
+      router.replace("/(app)")
       // Redirection ou mise à jour de l'état après connexion
     } catch (error) {
       Alert.alert("Erreur", (error as Error).message);

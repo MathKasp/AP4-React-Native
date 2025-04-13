@@ -3,7 +3,7 @@ import { Link, Redirect, useRootNavigationState, useRouter } from 'expo-router';
 import { useAuth } from '@/context/ctx';
 import { getAuth } from 'firebase/auth';
 
-export default function Index() {
+export default function Dashboard() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
@@ -18,15 +18,22 @@ export default function Index() {
     auth.signOut();
   }
 
+  const goToTickets = () => {
+    router.replace("/tickets")
+  }
+
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>index Screen</Text>
-      <Link href="/(auth)/login" style={styles.button}>
-        Already have an account. Go toooooooooooooo
-      </Link>
+      <Text style={styles.text}>Dashboard Screen</Text>
       <Pressable onPress={signOut}>
         <Text style={{color:'#fff'}}>
           Se déconnecter
+        </Text>
+      </Pressable>
+
+      <Pressable onPress={goToTickets}>
+        <Text style={{color:'#ff0000'}}>
+          Accéder à l'espace des ticket
         </Text>
       </Pressable>
     </View>

@@ -4,6 +4,7 @@ import { Link, Stack } from 'expo-router';
 export default function NotFound() {
     return (
         <>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen options={{ title: 'Not Found' }} />
             <View style={styles.container}>
                 <Link href="/" style={styles.button}>Go to Home</Link>

@@ -1,87 +1,149 @@
-import React from 'react';
-import { View, FlatList, StyleSheet, Text, StatusBar, Pressable } from 'react-native';
-import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
-import { Link } from 'expo-router'
-import { getAllTickets } from '@/services/ticket.service';
+import AddTicketForm from "@/components/tickets/TicketForm";
+import TicketList from "@/components/tickets/TicketCard";
+import { createTicket, getAllTickets, Ticket } from "@/services/ticket.service";
+import { useEffect, useState } from "react";
+import { useRouter } from "expo-router";
+import { Button, Platform, RefreshControl, SafeAreaView, StyleSheet, TextInput, View,Text,TouchableOpacity } from "react-native";
+import React from "react";
+import Ionicons from "@expo/vector-icons/build/Ionicons";
 
-interface Ticket {
-    id: string;
-    name: string;
-    status: string;
-    priority: string;
-  }
+const Tickets = () => {
+  const router = useRouter();
+  const ticketsData: Ticket[] = [];
+  const [yourTicketsData, setYourTicketsData] = useState<Ticket[]>(ticketsData);
+  const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredTickets, setFilteredTickets] = useState<Ticket[]>(yourTicketsData);
+  const priorityMap = new Map<string, number>([
+    ["critical", 1],
+    ["high", 2],
+    ["medium", 3],
+    ["low", 4],
+  ]);
+  const statusMap = new Map<string, number>([
+    ["open", 1],
+    ["in progress", 2],
+    ["closed", 3],
+  ]);
+  const getTickets = async () => {
+    const tickets = await getAllTickets();
+    setYourTicketsData(tickets);
+  };
 
-// const ticketList: Ticket[] = getAllTickets();
+  useEffect(() => {
+    getTickets(); 
+  }, []);
 
-// // const DATA = [
-// //     {
-// //         id: 'bd7acbea-c1b1-46c2-aed5-3ad53abb28ba',
-// //         title: 'First Item',
-// //     },
-// //     {
-// //         id: '3ac68afc-c605-48d3-a4f8-fbd91aa97f63',
-// //         title: 'Second Item',
-// //     },
-// //     {
-// //         id: '58694a0f-3da1-471f-bd96-145571e29d72',
-// //         title: 'Third Item',
-// //     },
-// // ];
+  useEffect(() => {
+    handleSearch(searchQuery); 
+  }, [yourTicketsData]);
 
-// const TicketItem = ({ ticket }: { ticket: Ticket }) => {
-//     return (
-//       <View style={styles.itemContainer}>
-//         <Text style={styles.name}>{ticket.name}</Text>
-//         <Text>Status: {ticket.status}</Text>
-//         <Text>Priority: {ticket.priority}</Text>
-//       </View>
-//     );
-//   };
+  const handleTicketPress = async (ticket: Ticket) => {
+    getTickets();  
+    router.push(`/tickets/${ticket.idTicket?.toString()}`);
+  };
 
-type ItemProps = { title: string };
+  const handleAddTicketList = () => {
+    setIsModalVisible(true);
+  };
 
-const Item = ({ title }: ItemProps) => (
-    <View style={styles.item}>
-        <Text style={styles.title}>{title}</Text>
+  const handleAddTicket = async (ticket: Ticket) => {
+    await createTicket({ nameTicket: ticket.name, priorityTicket: ticket.priority, statusTicket: ticket.status });
+    getTickets();
+    setIsModalVisible(false)
+  };
+
+  const onModalClose = () => {
+    setIsModalVisible(false);
+  };
+  const sortByPriority = () => {
+    const sorted = [...yourTicketsData].sort((a, b) => {
+      const aValue = priorityMap.get(a.priority.toLowerCase()) ?? 999;
+      const bValue = priorityMap.get(b.priority.toLowerCase()) ?? 999;
+      return aValue - bValue; 
+    });
+    setYourTicketsData(sorted);
+  };
+  
+  const sortByStatus = () => {
+    const sorted = [...yourTicketsData].sort((a, b) => {
+      const aValue = statusMap.get(a.status.toLowerCase()) ?? 999;
+      const bValue = statusMap.get(b.status.toLowerCase()) ?? 999;
+      return aValue - bValue;
+    });
+    setYourTicketsData(sorted);
+  };
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    if (query === "") {
+      setFilteredTickets(yourTicketsData); 
+    } else {
+      const filtered = yourTicketsData.filter(ticket =>
+        ticket.name.toLowerCase().includes(query.toLowerCase())
+      );
+      setFilteredTickets(filtered); 
+    }
+  };
+
+  return (
+    
+      <>
+            <TextInput
+        placeholder="Rechercher un ticket"
+        value={searchQuery}
+        onChangeText={handleSearch}
+        style={styles.SearchBar}
+      />
+     <View style={styles.filterBtn}>
+      <TouchableOpacity
+        onPress={sortByPriority}
+        style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+      >
+        <Ionicons name="filter-outline" size={16} />
+        <Text>Priorité</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        onPress={sortByStatus}
+        style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+      >
+        <Ionicons name="filter-outline" size={16} />
+        <Text>Statut</Text>
+      </TouchableOpacity>
     </View>
-);
-export default function Index() {
-    return (
-        <SafeAreaProvider>
-            <SafeAreaView style={styles.container}>
-                {/* <Link href={"/(app)/dashboard"} style={styles.text}> RETOURRRRRR
-                </Link> */}
-                {/* <FlatList
-                    data={ticketList}
-                    renderItem={({ item }) => <Item title={item.title} />}
-                    keyExtractor={item => item.id}
-                /> */}
-            </SafeAreaView>
-        </SafeAreaProvider>
-    );
-}
+      <TicketList
+      tickets={filteredTickets}
+      onTicketRefresh={getTickets}
+      onTicketPress={handleTicketPress}
+      onAddTicket={handleAddTicketList} />
+      <View style={{ flexDirection: "row", justifyContent: "space-evenly", marginVertical: 10 }}>
 
+</View>
+      <AddTicketForm
+        visible={isModalVisible}
+        onClose={onModalClose}
+        onSave={handleAddTicket} /></>
+    
+  );
+};
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        marginTop: StatusBar.currentHeight || 0,
-    },
-    item: {
-        backgroundColor: '#f9c2ff',
-        padding: 20,
-        marginVertical: 8,
-        marginHorizontal: 16,
-    },
-    title: {
-        fontSize: 32,
-    },
-    text: {
-        color: '#fff',
-    },
-    button: {
-        fontSize: 20,
-        textDecorationLine: 'underline',
-        color: '#fff',
-    },
-});
+  filterBtn: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginVertical: 10,
+    marginHorizontal: 10
+  },
+  SearchBar: {
+    height: 40,
+    borderColor: "#ccc",
+    borderWidth: 1,
+    borderRadius: 5,
+    paddingHorizontal: 10,
+    marginVertical: 10,
+    marginHorizontal: 10,
+  }})
+
+
+export default Tickets;
