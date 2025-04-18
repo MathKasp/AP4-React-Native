@@ -1,21 +1,17 @@
 import { db } from "@/config/config";
-import { collection, getDocs, addDoc, updateDoc, doc,getDoc, deleteDoc } from "firebase/firestore";
+import { TicketFirst, TicketTrue } from "@/types/tickets";
+import { dateOnly } from "@/utils/dateFormatter";
+import { collection, getDocs, addDoc, updateDoc, doc,getDoc, deleteDoc, Timestamp } from "firebase/firestore";
 
-export interface Ticket {
-  idTicket? : string;
-  name: string;
-  status: string;
-  priority: string;
-}
-const getAllTickets = async (): Promise<Ticket[]> => {
+
+const getAllTickets = async (): Promise<TicketTrue[]> => {
   const ticketsCollection = collection(db, "Tickets");
   const snapshot = await getDocs(ticketsCollection);
 
-  console.log("Raw snapshot:", snapshot.docs.map(doc => doc.data()));
 
   return snapshot.docs.map((doc) => ({
-    idTicket: doc.id,
-    ...(doc.data() as Ticket),
+    id: doc.id,
+    ...(doc.data() as TicketTrue),
   }));
 };
 
@@ -52,26 +48,44 @@ const getDetailTicket = async (idTicket: string) => {
 };
 
 //Création de tickets
-const createTicket = async ({
-  nameTicket,
-  priorityTicket,
-  statusTicket,
-}: {
-  nameTicket: string;
-  priorityTicket: string;
-  statusTicket: string;
-}): Promise<Ticket> => {
+const createTicket = async (ticket: TicketFirst): Promise<TicketTrue | null> => {
+  try {
+    console.log("ticket envoyé :", ticket);
   const ticketsCollection = collection(db, "Tickets");
-   await addDoc(ticketsCollection, {
-    name: nameTicket,
-    priority: priorityTicket,
-    status: statusTicket,
-  });
-  return {
-    name: nameTicket,
-    priority: priorityTicket,
-    status: statusTicket,
+  if (!ticket.createdBy || typeof ticket.createdBy !== 'string') {
+    throw new Error("une erreur sur l'utilisateur");
+  }
+  
+  const userRef = doc(db, "Users", ticket.createdBy);
+  const ticketData: TicketFirst = {
+    title: ticket.title,
+    description: ticket.description,
+    status: ticket.status,
+    priority: ticket.priority,
+    category: ticket.category,
+    createdBy: userRef,
+    createdAt: Timestamp.fromDate(dateOnly),
+    updatedAt: Timestamp.fromDate(dateOnly),
   };
+  if (ticket.location) {
+    ticketData.location = ticket.location;
+  }
+  console.log("TicketData avant ajout :", ticketData);
+  await addDoc(ticketsCollection, ticketData);
+  return {
+    title: ticket.title,
+    description: ticket.description,
+    status: ticket.status,
+    priority: ticket.priority,
+    category: ticket.category,
+    createdBy: userRef,
+    createdAt: Timestamp.fromDate(new Date()),
+    updatedAt: Timestamp.fromDate(new Date()),
+  };}
+  catch (error) {
+    console.error("Error creating ticket:", error);
+    return null; 
+  }
 };
 
 
@@ -88,25 +102,50 @@ const deleteTicket = async (idTicket:string) : Promise<boolean> => {
   }
 };
 
- const updateTicket = async ({
-  idTicket,
-  nameTicket,
-  statusTicket,
-  priorityTicket,
-}: {
-  idTicket: string;
-  nameTicket: string;
-  statusTicket: string;
-  priorityTicket: string;
-}) => {
-  const ticketRef = doc(db, "Tickets", idTicket);
+const updateTicket = async (
+  idTicket: string,
+  updatedData: TicketFirst
+): Promise<void> => {
+  if (!idTicket) throw new Error("ID du ticket manquant");
 
-  await updateDoc(ticketRef, {
-    name: nameTicket,  
-    status: statusTicket, 
-    priority: priorityTicket,
-  });
+  const ticketRef = doc(db, "Tickets", idTicket);
+  const now = new Date();
+  const dateOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  const updatePayload: any = {
+    title: updatedData.title,
+    description: updatedData.description,
+    status: updatedData.status,
+    priority: updatedData.priority,
+    category: updatedData.category,
+    updatedAt: Timestamp.fromDate(dateOnly),
+  };
+
+  if (updatedData.createdBy) {
+    updatePayload.createdBy =
+      typeof updatedData.createdBy === "string"
+        ? doc(db, "Users", updatedData.createdBy)
+        : updatedData.createdBy;
+  }
+
+  if (updatedData.assignedTo) {
+    updatePayload.assignedTo =
+      typeof updatedData.assignedTo === "string"
+        ? doc(db, "Users", updatedData.assignedTo)
+        : updatedData.assignedTo;
+  }
+
+  if (updatedData.dueDate) {
+    updatePayload.dueDate = updatedData.dueDate;
+  }
+
+  if (updatedData.location) {
+    updatePayload.location = updatedData.location;
+  }
+
+  await updateDoc(ticketRef, updatePayload);
 };
 
 
 export { getAllTickets, getTicketsDB, createTicket, getDetailTicket,deleteTicket,updateTicket };
+

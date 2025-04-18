@@ -1,143 +1,195 @@
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { View, Text, Alert, ActivityIndicator,StyleSheet } from "react-native";
-import { useEffect, useState } from "react";
-import Button from "@/components/ui/Button";
-import { getDetailTicket, Ticket,deleteTicket,updateTicket  } from "@/services/ticket.service"; 
 import AddTicketForm from "@/components/tickets/TicketForm";
-const TicketDetails = ({ refreshTickets }: { refreshTickets: () => void }) => {
-  const router = useRouter();
-  const { id } = useLocalSearchParams();
-  const idTicket = id as string;
+import TicketList from "@/components/tickets/TicketCard";
+import { createTicket, getAllTickets } from "@/services/ticket.service";
+import { useEffect, useState } from "react";
+import { Redirect, useRouter } from "expo-router";
+import { Button, Platform, RefreshControl, SafeAreaView, StyleSheet, TextInput, View,Text,TouchableOpacity } from "react-native";
+import React from "react";
+import Ionicons from "@expo/vector-icons/build/Ionicons";
+import { TicketFirst } from "@/types/tickets";
+import { useAuth } from "@/context/ctx";
+import { DocumentReference } from "firebase/firestore";
 
-  const [ticket, setTicket] = useState<Ticket | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+const Tickets = () => {
+  const router = useRouter();
+  const ticketsData: TicketFirst[] = [];
+  const [yourTicketsData, setYourTicketsData] = useState<TicketFirst[]>(ticketsData);
+  const [initialTicketsData, setInitialTicketsData] = useState<TicketFirst[]>([]);
+  const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredTickets, setFilteredTickets] = useState<TicketFirst[]>(yourTicketsData);
+  const [isPrioritySorted, setIsPrioritySorted] = useState(false);
+const [isStatusSorted, setIsStatusSorted] = useState(false);
+
+    const { user, loading,role } = useAuth();
+    
+      if (!user) return <Redirect href="/login" />;
+  const priorityMap = new Map<string, number>([
+    ["critical", 1],
+    ["high", 2],
+    ["medium", 3],
+    ["low", 4],
+  ]);
+  const statusMap = new Map<string, number>([
+    ["new", 1],
+    ["assigned",2],
+    ["in-progress", 3],
+    ["resolved", 4],
+    ["closed", 5],
+  ]);
+  const getTickets = async () => {
+    const tickets = await getAllTickets();
+
+    let filtered = tickets;
+    
+    if (role === "employee") {
+
+      filtered = tickets.filter(ticket => ticket.createdBy.id === user?.uid);
+    } else if (role === "support") {
+
+      filtered = tickets.filter(ticket => ticket.assignedTo?.id === user?.uid);
+
+    }
+    setYourTicketsData(filtered);
+    setInitialTicketsData(filtered);
+  };
 
   useEffect(() => {
-    if (idTicket) {
-      setLoading(true);
-      getDetailTicket(idTicket).then((data) => {
-        if (data) setTicket(data as Ticket);
-        setLoading(false);
-      });
+    getTickets(); 
+  }, []);
+
+  useEffect(() => {
+    handleSearch(searchQuery); 
+  }, [yourTicketsData]);
+
+  const handleTicketPress = async (ticket: TicketFirst) => {
+    getTickets();  
+    router.push(`/tickets/${ticket.id?.toString()}`);
+  };
+
+  const handleAddTicketList = () => {
+    setIsModalVisible(true);
+  };
+
+  const handleAddTicket = async (ticket: TicketFirst) => {
+    await createTicket({ title: ticket.title,
+                         description: ticket.description, 
+                         status: ticket.status,
+                         priority: ticket.priority,
+                         category: ticket.category,
+                         createdBy:user?.uid,
+                         location: ticket.location });
+    getTickets();
+    setIsModalVisible(false)
+  };
+
+  const onModalClose = () => {
+    setIsModalVisible(false);
+  };
+  const sortByPriority = () => {
+    if (!isPrioritySorted) {
+    const sorted = [...yourTicketsData].sort((a, b) => {
+      const aValue = priorityMap.get(a.priority.toLowerCase()) ?? 999;
+      const bValue = priorityMap.get(b.priority.toLowerCase()) ?? 999;
+      return aValue - bValue; 
+    });
+    setYourTicketsData(sorted);
+  }else {
+    setYourTicketsData(initialTicketsData)
+  }
+  setIsPrioritySorted(!isPrioritySorted)
+  setIsStatusSorted(false);
+  };
+  
+  const sortByStatus = () => {
+    if (!isStatusSorted) {
+    const sorted = [...yourTicketsData].sort((a, b) => {
+      const aValue = statusMap.get(a.status.toLowerCase()) ?? 999;
+      const bValue = statusMap.get(b.status.toLowerCase()) ?? 999;
+      return aValue - bValue;
+    });
+    setYourTicketsData(sorted);
+  } else {
+    setYourTicketsData(initialTicketsData)
+  } 
+  setIsStatusSorted(!isStatusSorted)
+  setIsPrioritySorted(false)
+
+}
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    if (query === "") {
+      setFilteredTickets(yourTicketsData); 
+    } else {
+      const filtered = yourTicketsData.filter(ticket =>
+        ticket.title.toLowerCase().includes(query.toLowerCase())
+      );
+      setFilteredTickets(filtered); 
     }
-  }, [idTicket]);
-
-  const goToTicketsIndex = () => {
-    router.replace("/tickets");
   };
-
-  const handleEdit = () => {
-    setIsEditModalVisible(true);
-  };
-
-  const handleSaveEdit = async (updatedTicket: Ticket) => {
-    
-    if (!updatedTicket || !idTicket) return;
-  
-    Alert.alert(
-      "Confirmer la modification",
-      "Êtes-vous sûr de vouloir modifier ce ticket ?",
-      [
-        { text: "Annuler", style: "cancel" },
-        {
-          text: "Enregistrer",
-          style: "destructive",
-          onPress: async () => {
-  
-            await updateTicket({
-              idTicket: idTicket,
-              nameTicket: updatedTicket.name,
-              statusTicket: updatedTicket.status,
-              priorityTicket: updatedTicket.priority,
-            });
-  
-            // Récupération du ticket mis à jour
-            const updated = await getDetailTicket(idTicket) as Ticket;
-            if (updated) {
-              setTicket(updated);
-              console.log("Ticket mis à jour avec succès:", updated);
-            } else {
-              console.log("Erreur : Le ticket mis à jour n'a pas pu être récupéré.");
-            }
-  
-            setIsEditModalVisible(false);
-          },
-        },
-      ]
-    );
-  };
-
-  const handleDelete = () => {
-    Alert.alert(
-      "Supprimer le ticket",
-      "Voulez-vous vraiment supprimer ce ticket ?",
-      [
-        { text: "Annuler", style: "cancel" },
-        {
-          text: "Supprimer",
-          style: "destructive",
-          onPress: async () => {
-            const checker = await deleteTicket(idTicket)
-            if (checker) {
-              setTicket(null);
-              setLoading(true);
-              
-              goToTicketsIndex()
-
-            }
-          },
-        },
-      ]
-    );
-  };
-  if (!ticket) return <Text style={{ textAlign: "center", marginTop: 20 }}>Veuillez sélectionner un ticket dans la liste</Text>;
-
-  if (loading) return <ActivityIndicator size="large" color="#0000ff" />;
 
   return (
-    <>
-      <Stack.Screen options={{ headerShown: false }} />
-      <View style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        padding: 20,
-      }}>
-        <Text style={{ fontSize: 24, fontWeight: "bold", marginBottom: 10 }}>{ticket.name}</Text>
-        <Text>Status: {ticket.status}</Text>
-        <Text>Priorité: {ticket.priority}</Text>
+    
+      <>
+            <TextInput
+        placeholder="Rechercher un ticket"
+        value={searchQuery}
+        onChangeText={handleSearch}
+        style={styles.SearchBar}
+      />
+     <View style={styles.filterBtn}>
+      
 
-        <View style={{ flexDirection: "row", marginTop: 20 }}>
-          <Button theme="edit" label="Modifier" onPress={handleEdit}  />
-          <Button theme="delete" label="Supprimer" onPress={handleDelete}  />
-        </View>
+      <TouchableOpacity
+        onPress={sortByStatus}
+        style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+      >
+        <Ionicons name="filter-outline" size={16} />
+        <Text>Statut</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        onPress={sortByPriority}
+        style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+      >
+        <Ionicons name="filter-outline" size={16} />
+        <Text>Priorité</Text>
+      </TouchableOpacity>
+    </View>
+      <TicketList
+      tickets={filteredTickets}
+      onTicketRefresh={getTickets}
+      onTicketPress={handleTicketPress}
+      onAddTicket={handleAddTicketList} />
 
-        <Button label="Retour à la liste" onPress={goToTicketsIndex} />
-      </View>
-      {isEditModalVisible && (
-        <AddTicketForm
-          visible={isEditModalVisible}
-          onClose={() => setIsEditModalVisible(false)}
-          onSave={handleSaveEdit}
-          initialTicket={ticket} 
-        />
-      )}
-    </>
+    
+      <View style={{ flexDirection: "row", justifyContent: "space-evenly", marginVertical: 10 }}>
+
+</View>
+      <AddTicketForm
+        visible={isModalVisible}
+        onClose={onModalClose}
+        onSave={handleAddTicket} /></>
+    
   );
 };
 
 const styles = StyleSheet.create({
-  returnBt: {
-   marginTop : 20
+  filterBtn: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginVertical: 10,
+    marginHorizontal: 10
   },
-  text: {
-    color: '#000000',
-  },
-  button: {
-    fontSize: 20,
-    textDecorationLine: 'underline',
-    color: '#fff',
-  },
-});
-export default TicketDetails;
+  SearchBar: {
+    height: 40,
+    borderColor: "#ccc",
+    borderWidth: 1,
+    borderRadius: 5,
+    paddingHorizontal: 10,
+    marginVertical: 10,
+    marginHorizontal: 10,
+  }})
+
+
+export default Tickets;

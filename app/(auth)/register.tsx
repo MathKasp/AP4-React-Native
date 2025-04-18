@@ -1,10 +1,10 @@
 import { Text, View, StyleSheet, Alert, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Link, router } from 'expo-router';
 import { useState } from 'react';
-import { auth } from "@/config/config";
+import { auth, db } from "@/config/config";
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { IconButton, TextInput, Button as Bt } from "react-native-paper";
-import { db } from '@/config/config';
+// import { db } from '@/config/config';
 import { doc, setDoc } from 'firebase/firestore';
 
 export default function Register() {
@@ -60,7 +60,7 @@ export default function Register() {
         style={styles.input}
       />
       <TextInput
-        label="Nom de famille"
+        label="Nom"
         value={fullName}
         onChangeText={setName}
         mode="outlined"

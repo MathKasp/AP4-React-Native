@@ -1,25 +1,16 @@
-import { Ticket } from "@/services/ticket.service";
+import { TicketFirst, TicketTrue } from "@/types/tickets";
+import { Timestamp } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
-import {
-  Modal,
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  TouchableWithoutFeedback,
-  Keyboard,
-  ScrollView,
-} from "react-native";
+import { Modal, View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, ScrollView,} from "react-native";
+import * as Location from "expo-location";
+import Ionicons from "@expo/vector-icons/build/Ionicons";
 
 // Props pour le formulaire
 interface AddTicketFormProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (ticket: Ticket) => void;
-  initialTicket?: Ticket;
+  onSave: (ticket: TicketFirst) => void;
+  initialTicket?: TicketFirst;
 }
 
 const AddTicketForm: React.FC<AddTicketFormProps> = ({
@@ -29,30 +20,40 @@ const AddTicketForm: React.FC<AddTicketFormProps> = ({
   initialTicket,
 }) => {
   // État initial du ticket
-  const [ticket, setTicket] = useState<Ticket>
+  const [ticket, setTicket] = useState<TicketFirst>
    ({
-    idTicket: "",
-    name: "",
-    status: "Open",
-    priority: "Medium", 
+    title: "",
+    description:"",
+    status: "new",
+    priority: "medium",
+    category: "hardware",
   });
+  const [typeForm, setTypeForm] = useState<string>("")
 
   useEffect(() => {
     if (initialTicket) {
       setTicket(initialTicket);
+      setTypeForm("edit")
+    } else {
+      setTypeForm("add")
     }
   }, [initialTicket]);
   // Options disponibles
-  const statusOptions = ["Open", "In Progress", "Closed"];
-  const priorityOptions = ["High", "Medium", "Low"];
+  const statusOptions = ["new", "assigned", "in-progress","resolved","closed"];
+  const priorityOptions = ["low", "medium", "high","critical"];
+  const categoryOPtions = ["hardware","software","network","access","other"]
 
   // Gestion des erreurs
   const [nameError, setNameError] = useState("");
 
   // Validation du formulaire
   const validateForm = (): boolean => {
-    if (!ticket.name.trim()) {
-      setNameError("Le nom du ticket est requis");
+    if (!ticket.title.trim()) {
+      setNameError("Le titre du ticket est requis");
+      return false;
+    }
+    if (!ticket.description.trim()) {
+      setNameError("La description du ticket est requis");
       return false;
     }
     setNameError("");
@@ -61,16 +62,36 @@ const AddTicketForm: React.FC<AddTicketFormProps> = ({
 
   // Soumission du formulaire
   const handleSubmit = () => {
+    console.log("testTicketSTP",ticket)
+
     if (validateForm()) {
       onSave(ticket);
       // Réinitialiser le formulaire
       setTicket({
-        idTicket:"",
-        name: "",
-        status: "Open",
-        priority: "Medium",
+    title: "",
+    description:"",
+    status: "new",
+    priority: "medium",
+    category: "hardware",
       });
       onClose();
+    }
+  };
+
+  const detectLocation = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        alert("Permission de localisation refusée");
+        return;
+      }
+  
+      const location = await Location.getCurrentPositionAsync({});
+      const coords = `${location.coords.latitude},${location.coords.longitude}`;
+      setTicket((prev) => ({ ...prev, location: coords }));
+    } catch (error) {
+      console.error("Erreur de géolocalisation :", error);
+      alert("Impossible d'obtenir la position");
     }
   };
 
@@ -78,8 +99,10 @@ const AddTicketForm: React.FC<AddTicketFormProps> = ({
   const renderOptions = (
     options: string[],
     selectedValue: string,
-    field: "status" | "priority"
+    field: "status" | "priority"|"category"
   ) => {
+    const isEditMode = typeForm === "edit";
+    const isStatusField = field === "status";
     return (
       <View style={styles.optionsContainer}>
         {options.map((option) => (
@@ -89,7 +112,12 @@ const AddTicketForm: React.FC<AddTicketFormProps> = ({
               styles.optionButton,
               ticket[field] === option && styles.selectedOption,
             ]}
-            onPress={() => setTicket({ ...ticket, [field]: option })}
+            onPress={() => {
+              if (isStatusField || !isEditMode) {
+                setTicket({ ...ticket, [field]: option });
+              }
+            }}
+            disabled={isEditMode && field !== "status"}
           >
             <Text
               style={[
@@ -130,11 +158,34 @@ const AddTicketForm: React.FC<AddTicketFormProps> = ({
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Nom du ticket</Text>
                   <TextInput
-                    style={[styles.input, nameError ? styles.inputError : null]}
-                    value={ticket.name}
+                    style={[styles.input, 
+                      nameError ? styles.inputError : null, 
+                      typeForm === "edit" && { backgroundColor: "#EDEDED", color: "#999" },]}
+                    value={ticket.title}
                     onChangeText={(text) => {
-                      setTicket({ ...ticket, name: text });
-                      if (text.trim()) setNameError("");
+                      if (typeForm !== "edit") {
+                        setTicket({ ...ticket, title: text });
+                        if (text.trim()) setNameError("");
+                      }
+                    }}
+                    placeholder="Titre du ticket..."
+                    placeholderTextColor="#A0A0A0"
+                  />
+                  {nameError ? (
+                    <Text style={styles.errorText}>{nameError}</Text>
+                  ) : null}
+
+                  <Text style={styles.label}>Description du ticket</Text>
+                  <TextInput
+                    style={[styles.input,
+                       nameError ? styles.inputError : null, 
+                      typeForm === "edit" && { backgroundColor: "#EDEDED", color: "#999" },]}
+                    value={ticket.description}
+                    onChangeText={(text) => {
+                      if (typeForm !== "edit") {
+                        setTicket({ ...ticket, description: text });
+                        if (text.trim()) setNameError("");
+                      }
                     }}
                     placeholder="Décrivez le ticket..."
                     placeholderTextColor="#A0A0A0"
@@ -149,10 +200,34 @@ const AddTicketForm: React.FC<AddTicketFormProps> = ({
                   {renderOptions(statusOptions, ticket.status, "status")}
                 </View>
 
+                {typeForm !== "edit" && (
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Priorité</Text>
                   {renderOptions(priorityOptions, ticket.priority, "priority")}
                 </View>
+              )}
+              
+                {typeForm !== "edit" && (
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Catégorie</Text>
+                    {renderOptions(categoryOPtions, ticket.category, "category")}
+                  </View>
+                )}
+
+              {typeForm == "add" && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Localisation</Text>
+                  <TouchableOpacity onPress={detectLocation} style={styles.detectButton}>
+                    <Ionicons name="earth-outline" size={16}></Ionicons>
+                    <Text style={styles.detectButtonText}>Détecter la position</Text>
+                  </TouchableOpacity>
+                  {ticket.location && (
+                    <Text style={styles.locationText}>
+                      Position détectée : {ticket.location}
+                    </Text>
+                  )}
+                </View>
+              )}
               </ScrollView>
 
               <View style={styles.buttonContainer}>
@@ -304,6 +379,24 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     fontWeight: "500",
+  },
+  detectButton: {
+    backgroundColor: "#2196F3",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 8,
+  },
+  detectButtonText: {
+    color: "white",
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  locationText: {
+    marginTop: 8,
+    color: "#424242",
+    fontSize: 14,
   },
 });
 

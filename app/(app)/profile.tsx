@@ -1,10 +1,10 @@
- 
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { auth, db } from '@/config/config';
-import { doc, getDoc } from 'firebase/firestore';
+import { useAuth } from '@/context/ctx';
+import { getUserData } from '@/services/user.service';
 
 export default function Profile() {
+    const { user,role } = useAuth();
     const [userData, setUserData] = useState({
         email: "",
         fullName: "",
@@ -13,41 +13,33 @@ export default function Profile() {
     });
     
     useEffect(() => {
-        async function loadUserData() {
-            const uid = auth.currentUser?.uid;
-            
-            if (!uid) {
-                console.log("Utilisateur non connecté");
-                return;
-            }
-            
-            const userRef = doc(db, "Users", uid);
-            
+        async function fetchUserData() {
+            if (!user?.uid) return;
+      
             try {
-                const docSnapshot = await getDoc(userRef);
-                
-                if (docSnapshot.exists()) {
-                    const data = docSnapshot.data();
-                    setUserData({
-                        email: data.email || "",
-                        fullName: data.fullName || "",
-                        departement: data.departement || "",
-                        role: data.role || "",
-
-                    });
-                }
+              const data = await getUserData(user.uid);
+              setUserData(data);
             } catch (error) {
-                console.log("Erreur:", error);
+              console.error("Erreur lors du chargement des données utilisateur:", error);
             }
-        }
-        
-        loadUserData();
-    }, []);
+          }
+      
+          fetchUserData();
+        }, [user]);
 
     return (
         <View style={styles.container}>
+            {role === "admin" && (
+                <Text style={styles.label}>Vous êtes administrateur</Text>
+            )}
+            {role === "support" && (
+                <Text style={styles.label}>Vous êtes un support</Text>
+            )}
+            {role === "employee" && (
+                <Text style={styles.label}>Vous êtes employee</Text>
+            )}
             <Text style={styles.title}>Mon Profil</Text>
-            
+           
             <View style={styles.infoBox}>
                 <Text style={styles.label}>Email:</Text>
                 <Text style={styles.value}>{userData.email}</Text>
