@@ -1,5 +1,5 @@
 import { db } from "@/config/config";
-import { TicketFirst, TicketTrue } from "@/types/tickets";
+import { TicketFirst, TicketTrue } from "@/types/ticket";
 import { dateOnly } from "@/utils/dateFormatter";
 import { collection, getDocs, addDoc, updateDoc, doc,getDoc, deleteDoc, Timestamp } from "firebase/firestore";
 

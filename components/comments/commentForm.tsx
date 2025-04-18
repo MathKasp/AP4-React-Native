@@ -1,5 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
+import * as ImagePicker from 'expo-image-picker';
 import { Modal, View, TextInput, StyleSheet, Button, Text } from "react-native";
+
+import ImageViewer from '@/components/ui/ImageViewer';
 
 interface Props {
   visible: boolean;
@@ -10,13 +13,13 @@ interface Props {
 const AddCommentModal = ({ visible, onClose, onSave }: Props) => {
   const [content, setContent] = useState("");
   const [nameError, setNameError] = useState("");
-  
+
   const validateForm = (): boolean => {
     if (!content.trim()) {
       setNameError("Un commentaire ne peut pas être vide");
       return false;
     }
-   
+
     setNameError("");
     return true;
   };
@@ -26,6 +29,24 @@ const AddCommentModal = ({ visible, onClose, onSave }: Props) => {
       onSave(content.trim());
       setContent("");
       onClose();
+    }
+  };
+
+  const imageRef = useRef<View>(null);
+  const [selectedImage, setSelectedImage] = useState<string | undefined>(undefined);
+  const PlaceholderImage = require('@/assets/images/defaultImg.webp');
+
+  const pickImageAsync = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      setSelectedImage(result.assets[0].uri);
+    } else {
+      alert('You did not select any image.');
     }
   };
 
@@ -40,18 +61,26 @@ const AddCommentModal = ({ visible, onClose, onSave }: Props) => {
             onChangeText={setContent}
             multiline
             style={[styles.input,
-              nameError ? styles.inputError : null]}
-            
+            nameError ? styles.inputError : null]}
+
           />
           {nameError ? (
-                              <Text style={styles.errorText}>{nameError}</Text>
-                            ) : null}
+            <Text style={styles.errorText}>{nameError}</Text>
+          ) : null}
           
+          <View ref={imageRef} collapsable={false}>
+            <ImageViewer imgSource={PlaceholderImage} selectedImage={selectedImage} />
+          </View>
+          <View>
+            <Button title="Choisir une photo" onPress={pickImageAsync} />
+          </View>
+
           <View style={styles.button}>
-          <Button title="Envoyer" onPress={handleSubmit} />
-          <Button title="Annuler" onPress={onClose} color="grey" />
+            <Button title="Envoyer" onPress={handleSubmit} />
+            <Button title="Annuler" onPress={onClose} color="grey" />
           </View>
         </View>
+
       </View>
     </Modal>
   );

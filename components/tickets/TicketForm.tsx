@@ -1,4 +1,4 @@
-import { TicketFirst, TicketTrue } from "@/types/tickets";
+import { TicketFirst, TicketTrue } from "@/types/ticket";
 import { Timestamp } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import { Modal, View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, ScrollView,} from "react-native";

@@ -1,4 +1,4 @@
-import { TicketFirst } from "@/types/tickets";
+import { TicketFirst } from "@/types/ticket";
 import React, { useEffect, useState } from "react";
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, StatusBar, ActivityIndicator, RefreshControl,} from "react-native";
 
