@@ -1,6 +1,7 @@
 import { db } from "@/config/config";
+import { comments } from "@/types/comments";
 import { dateOnly } from "@/utils/dateFormatter";
-import { addDoc, collection, doc, getDocs, query, Timestamp, where } from "firebase/firestore";
+import { addDoc, collection, doc, getDocs, onSnapshot, query, Timestamp, where } from "firebase/firestore";
 
 const addComment = async ({
     ticketId,
@@ -20,25 +21,25 @@ const addComment = async ({
       userId: doc(db, "Users", userId),
       content,
       attachmentUrl: attachmentUrl || null,
-      createdAt: Timestamp.fromDate(dateOnly),
+      createdAt: Timestamp.fromDate(new Date),
     };
     await addDoc(commentsRef, newComment);
   };
 
-  const getComments = async(idTicket: string) => {
-    try {
-    const commentsRef = collection(db, "Comments");
-    const q = query(commentsRef, where("ticketId", "==", doc(db, "Tickets", idTicket)));
-    const querySnapshot = await getDocs(q);
-    const commentsList = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-
-    return commentsList;
-  }catch (error){
-    console.error("Erreur lors de la récupération des commentaires:", error);
-    return [];
-  }
-  }
-  export {addComment,getComments}
+   const listenToComments = (ticketId: string, setComments: (comments: comments[]) => void) => {
+    if (!ticketId) {
+      console.error("ID du ticket invalide");
+      return () => {}; 
+    }
+    const ticketRef = doc(db, "Tickets", ticketId)
+    const commentsCollection = collection(db, "Comments");
+    const commentsQuery = query(commentsCollection, where("ticketId", "==", ticketRef));
+  
+    const unsubscribeComments = onSnapshot(commentsQuery, (snapshot) => {
+      const commentList = snapshot.docs.map((doc) => doc.data() as comments);
+      setComments(commentList);
+    });
+  
+    return unsubscribeComments;  
+  };
+  export {addComment,listenToComments}

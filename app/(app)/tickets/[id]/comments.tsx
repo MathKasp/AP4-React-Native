@@ -1,7 +1,7 @@
+import { listenToComments } from "@/services/comment.service";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { View, Text, ActivityIndicator, ScrollView } from "react-native";
-import { getComments } from "@/services/comment.service";
 
 const CommentsScreen = () => {
   const { id } = useLocalSearchParams();
@@ -11,10 +11,11 @@ const CommentsScreen = () => {
 
   useEffect(() => {
     if (idTicket) {
-      getComments(idTicket).then((data) => {
+      const unsubscribeComments = listenToComments(idTicket, (data) => {
         setComments(data);
         setLoading(false);
       });
+      return () => unsubscribeComments();
     }
   }, [idTicket]);
 

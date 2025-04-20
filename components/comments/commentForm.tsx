@@ -34,7 +34,7 @@ const AddCommentModal = ({ visible, onClose, onSave }: Props) => {
 
   const imageRef = useRef<View>(null);
   const [selectedImage, setSelectedImage] = useState<string | undefined>(undefined);
-  const PlaceholderImage = require('@/assets/images/defaultImg.webp');
+  const PlaceholderImage = require('@/assets/images/defaultImg.webp'); // attachmentUrl du ticket || null
 
   const pickImageAsync = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -45,6 +45,9 @@ const AddCommentModal = ({ visible, onClose, onSave }: Props) => {
 
     if (!result.canceled) {
       setSelectedImage(result.assets[0].uri);
+      result.assets.map((img) => {
+        console.log(img, "gneu2")
+      })
     } else {
       alert('You did not select any image.');
     }
@@ -72,7 +75,7 @@ const AddCommentModal = ({ visible, onClose, onSave }: Props) => {
             <ImageViewer imgSource={PlaceholderImage} selectedImage={selectedImage} />
           </View>
           <View>
-            <Button title="Choisir une photo" onPress={pickImageAsync} />
+            <Button title="Choisir une image" onPress={pickImageAsync} />
           </View>
 
           <View style={styles.button}>

@@ -1,3 +1,4 @@
+import { useAuth } from "@/context/ctx";
 import { TicketFirst } from "@/types/ticket";
 import React, { useEffect, useState } from "react";
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, StatusBar, ActivityIndicator, RefreshControl,} from "react-native";
@@ -56,7 +57,7 @@ const TicketList: React.FC<TicketListProps> = ({
   const [paginatedTickets, setPaginatedTickets] = useState<TicketFirst[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const itemsPerPage = 4;
-
+  const {user, role}= useAuth()
   useEffect(() => {
     paginateData();
   }, [tickets, currentPage]);
@@ -165,6 +166,7 @@ const TicketList: React.FC<TicketListProps> = ({
       />
       {renderPaginationButtons()}
   </View>
+      {role === "employee" && 
       <TouchableOpacity
         style={styles.floatingButton}
         onPress={onAddTicket}
@@ -172,6 +174,7 @@ const TicketList: React.FC<TicketListProps> = ({
       >
         <Text style={styles.floatingButtonText}>+</Text>
       </TouchableOpacity>
+}
     </View>
   );
   }

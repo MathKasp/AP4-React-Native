@@ -5,10 +5,10 @@ import Button from "@/components/ui/Button";
 import { getDetailTicket, deleteTicket, updateTicket } from "@/services/ticket.service";
 import AddTicketForm from "@/components/tickets/TicketForm";
 import { TicketFirst } from "@/types/ticket";
-import { DocumentData, DocumentReference, getDoc } from "firebase/firestore";
+import { DocumentData, DocumentReference, getDoc, onSnapshot } from "firebase/firestore";
 import AddCommentModal from "@/components/comments/commentForm";
 import { useAuth } from "@/context/ctx";
-import { addComment, getComments } from "@/services/comment.service";
+import { addComment, listenToComments } from "@/services/comment.service";
 import { comments } from "@/types/comments";
 const TicketDetails = () => {
   const router = useRouter();
@@ -21,7 +21,7 @@ const TicketDetails = () => {
   const [commentModalVisible, setCommentModalVisible] = useState(false);
   const [createdByUser, setCreatedByUser] = useState<string | null>(null);
   const { user, role } = useAuth()
-  const [comments, setComments] = useState<comments[] | any>([]);
+  const [comments, setComments] = useState<comments[]>([]);
 
 
 
@@ -32,12 +32,11 @@ const TicketDetails = () => {
         if (data) setTicket(data as TicketFirst);
         setLoading(false);
       });
-      getComments(idTicket).then((commentList) => {
-        setComments(commentList)
-      })
+      const unsubscribeComments = listenToComments(idTicket, setComments);
+
+      return () => unsubscribeComments();
     }
   }, [idTicket]);
-
   useEffect(() => {
     const fetchCreator = async () => {
       if (ticket?.createdBy && typeof ticket.createdBy !== "string") {
@@ -62,6 +61,10 @@ const TicketDetails = () => {
 
   const goToCommentsScreen = () => {
     router.push(`/tickets/${idTicket}/comments`);
+  };
+
+  const goToAssingationScreen = () => {
+    router.push(`/tickets/${idTicket}/assignation`);
   };
 
   const goToTicketsIndex = () => {
@@ -128,10 +131,11 @@ const TicketDetails = () => {
   };
 
   const handleAddComment = async (text: string, image?: string) => {
+
     if (!user?.uid) {
       return Alert.alert("Erreur", "Utilisateur non connecté.");
     }
-    
+
     try {
       await addComment({
         ticketId: idTicket,
@@ -139,6 +143,7 @@ const TicketDetails = () => {
         content: text,
         attachmentUrl: image,
       });
+      Alert.alert("Succès", "Commentaire ajouté");
     } catch (error) {
       console.error("Erreur lors de l'ajout du commentaire :", error);
       Alert.alert("Erreur", "Impossible d'ajouter le commentaire.");
@@ -178,21 +183,27 @@ const TicketDetails = () => {
           <Button theme="delete" label="Supprimer" onPress={handleDelete} />
 
         </View>
-        {role === "support" && (
-          <RNButton title="Ajouter un commentaire" onPress={() => setCommentModalVisible(true)}></RNButton>
+        <View style={{ gap: 10, marginTop: 20 }}>
+          {role === "admin" && (
+            <RNButton title="Assigner le ticket" onPress={goToAssingationScreen} />
+          )}
+          {role === "support" && (
+            <RNButton title="Ajouter un commentaire" onPress={() => setCommentModalVisible(true)} />
 
-        )}
+          )}
 
-        {hasComments && (
-          <RNButton title="Voir les commentaires" onPress={goToCommentsScreen} />
-        )}
+          {hasComments && (
+            <RNButton title="Voir les commentaires" onPress={goToCommentsScreen} />
+          )}
+
+        </View>
         <Button label="Retour à la liste" onPress={goToTicketsIndex} />
       </View>
       {commentModalVisible && (
         <AddCommentModal
           visible={commentModalVisible}
           onClose={() => setCommentModalVisible(false)}
-          onSave={(text) => { handleAddComment(text) }}
+          onSave={handleAddComment}
         />
       )}
       {isEditModalVisible && (

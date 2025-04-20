@@ -41,10 +41,9 @@ const Tickets = () => {
     const tickets = await getAllTickets();
 
     let filtered = tickets;
+
     if (role === "employee") {
-      filtered = tickets.filter(ticket => { const createdById = ticket.createdBy?.id;
-        return createdById === user?.uid;
-      });
+      filtered = tickets.filter(ticket => ticket.createdBy.id === user?.uid);
     } else if (role === "support") {
 
       filtered = tickets.filter(ticket => ticket.assignedTo?.id === user?.uid);
@@ -63,8 +62,6 @@ const Tickets = () => {
   }, [yourTicketsData]);
 
   const handleTicketPress = async (ticket: TicketFirst) => {
-    getTickets();
-    console.log(ticket, 'yeepee')
     router.push(`/tickets/${ticket.id?.toString()}`);
   };
 
@@ -82,7 +79,6 @@ const Tickets = () => {
       createdBy: user?.uid,
       location: ticket.location
     });
-    getTickets();
     setIsModalVisible(false)
   };
 

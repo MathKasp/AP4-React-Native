@@ -146,6 +146,12 @@ const updateTicket = async (
   await updateDoc(ticketRef, updatePayload);
 };
 
+const assignSupportToTicket = async (ticketId: string, supportUserId: string) => {
+  const ticketRef = doc(db, "Tickets", ticketId);
+  const supportRef = doc(db, "Users", supportUserId);
+  await updateDoc(ticketRef, { assignedTo: supportRef });
+};
 
-export { getAllTickets, getTicketsDB, createTicket, getDetailTicket,deleteTicket,updateTicket };
+
+export { getAllTickets, getTicketsDB, createTicket, getDetailTicket, deleteTicket, updateTicket, assignSupportToTicket };
 
