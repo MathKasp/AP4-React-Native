@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { auth, db } from "@/config/config";
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { IconButton, TextInput, Button as Bt } from "react-native-paper";
-// import { db } from '@/config/config';
 import { doc, setDoc } from 'firebase/firestore';
 
 export default function Register() {
@@ -27,8 +26,6 @@ export default function Register() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user
-      const userId = user.uid;
-
       await setDoc(doc(db, "Users", user.uid), {
         email: email,
         fullName: fullName,
@@ -89,7 +86,7 @@ export default function Register() {
         onPress={handleRegister}
         style={styles.button}
       >S'enregistrer</Bt>
-      <Bt mode="text" onPress={GoToLogin}>déjà un compte ? connectez-vous</Bt>
+      <Bt mode="text" onPress={GoToLogin}>déjà un compte ? se connecter !</Bt>
     </View>
   );
 }

@@ -70,6 +70,9 @@ const createTicket = async (ticket: TicketFirst): Promise<TicketTrue | null> => 
   if (ticket.location) {
     ticketData.location = ticket.location;
   }
+  if (ticket.dueDate) {
+    ticketData.dueDate = ticket.dueDate;
+  }
   console.log("TicketData avant ajout :", ticketData);
   await addDoc(ticketsCollection, ticketData);
   return {

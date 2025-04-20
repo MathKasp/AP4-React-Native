@@ -1,15 +1,17 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { View, Text, Alert, ActivityIndicator, StyleSheet, Button as RNButton } from "react-native";
+import { View, Text, Alert, ActivityIndicator, StyleSheet, Button as RNButton, ScrollView } from "react-native";
 import { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
 import { getDetailTicket, deleteTicket, updateTicket } from "@/services/ticket.service";
 import AddTicketForm from "@/components/tickets/TicketForm";
 import { TicketFirst } from "@/types/ticket";
-import { DocumentData, DocumentReference, getDoc, onSnapshot } from "firebase/firestore";
+import { DocumentData, DocumentReference, getDoc } from "firebase/firestore";
 import AddCommentModal from "@/components/comments/commentForm";
 import { useAuth } from "@/context/ctx";
 import { addComment, listenToComments } from "@/services/comment.service";
 import { comments } from "@/types/comments";
+// import { sendPushNotification } from "@/services/pushNotifications"; 
+
 const TicketDetails = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams();
@@ -20,10 +22,9 @@ const TicketDetails = () => {
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [commentModalVisible, setCommentModalVisible] = useState(false);
   const [createdByUser, setCreatedByUser] = useState<string | null>(null);
-  const { user, role } = useAuth()
+  const { user, role } = useAuth();
   const [comments, setComments] = useState<comments[]>([]);
-
-
+  const [assignedToUser, setAssignedToUser] = useState<string | null>(null);
 
   useEffect(() => {
     if (idTicket) {
@@ -33,10 +34,10 @@ const TicketDetails = () => {
         setLoading(false);
       });
       const unsubscribeComments = listenToComments(idTicket, setComments);
-
       return () => unsubscribeComments();
     }
   }, [idTicket]);
+
   useEffect(() => {
     const fetchCreator = async () => {
       if (ticket?.createdBy && typeof ticket.createdBy !== "string") {
@@ -59,25 +60,35 @@ const TicketDetails = () => {
     fetchCreator();
   }, [ticket?.createdBy]);
 
-  const goToCommentsScreen = () => {
-    router.push(`/tickets/${idTicket}/comments`);
-  };
+  useEffect(() => {
+    const fetchAssigned = async () => {
+      if (ticket?.assignedTo && typeof ticket.assignedTo !== "string") {
+        try {
+          const assignedRef = ticket.assignedTo as DocumentReference<DocumentData>;
+          const docSnap = await getDoc(assignedRef);
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            setAssignedToUser(data?.fullName || "Nom non disponible");
+          } else {
+            setAssignedToUser("Utilisateur inconnu");
+          }
+        } catch (error) {
+          console.error("Erreur lors de la récupération de l'utilisateur :", error);
+          setAssignedToUser("Erreur de récupération");
+        }
+      }
+    };
 
-  const goToAssingationScreen = () => {
-    router.push(`/tickets/${idTicket}/assignation`);
-  };
+    fetchAssigned();
+  }, [ticket?.assignedTo]);
 
-  const goToTicketsIndex = () => {
-    router.replace("/tickets");
-  };
+  const goToCommentsScreen = () => router.push(`/tickets/${idTicket}/comments`);
+  const goToAssingationScreen = () => router.push(`/tickets/${idTicket}/assignation`);
+  const goToTicketsIndex = () => router.replace("/tickets");
 
-  const handleEdit = () => {
-    setIsEditModalVisible(true);
-  };
-
+  const handleEdit = () => setIsEditModalVisible(true);
 
   const handleSaveEdit = async (updatedTicket: TicketFirst) => {
-
     if (!updatedTicket || !idTicket) return;
 
     Alert.alert(
@@ -90,15 +101,11 @@ const TicketDetails = () => {
           style: "destructive",
           onPress: async () => {
             await updateTicket(idTicket, updatedTicket);
-
             const updated = await getDetailTicket(idTicket) as TicketFirst;
             if (updated) {
               setTicket(updated);
               console.log("Ticket mis à jour avec succès:", updated);
-            } else {
-              console.log("Erreur : Le ticket mis à jour n'a pas pu être récupéré.");
             }
-
             setIsEditModalVisible(false);
           },
         },
@@ -116,13 +123,11 @@ const TicketDetails = () => {
           text: "Supprimer",
           style: "destructive",
           onPress: async () => {
-            const checker = await deleteTicket(idTicket)
+            const checker = await deleteTicket(idTicket);
             if (checker) {
               setTicket(null);
               setLoading(true);
-
-              goToTicketsIndex()
-
+              goToTicketsIndex();
             }
           },
         },
@@ -131,7 +136,6 @@ const TicketDetails = () => {
   };
 
   const handleAddComment = async (text: string, image?: string) => {
-
     if (!user?.uid) {
       return Alert.alert("Erreur", "Utilisateur non connecté.");
     }
@@ -141,8 +145,9 @@ const TicketDetails = () => {
         ticketId: idTicket,
         userId: user.uid,
         content: text,
-        attachmentUrl: image,
+        attachmentUrl: image,     
       });
+      
       Alert.alert("Succès", "Commentaire ajouté");
     } catch (error) {
       console.error("Erreur lors de l'ajout du commentaire :", error);
@@ -151,59 +156,130 @@ const TicketDetails = () => {
   };
 
   const hasComments = comments.length > 0;
-  if (!ticket) return <Text style={{ textAlign: "center", marginTop: 20 }}>Veuillez sélectionner un ticket dans la liste</Text>;
 
-  if (loading) return <ActivityIndicator size="large" color="#0000ff" />;
+  if (!ticket) return (
+    <View style={styles.centerContainer}>
+      <Text>Veuillez sélectionner un ticket dans la liste</Text>
+    </View>
+  );
+
+  if (loading) return (
+    <View style={styles.centerContainer}>
+      <ActivityIndicator size="large" color="#0066CC" />
+    </View>
+  );
 
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        padding: 20,
-      }}>
-        <Text style={{ fontSize: 24, fontWeight: "bold", marginBottom: 10 }}>{ticket.title}</Text>
-        <Text>Description: {ticket.description}</Text>
-        <Text>Status: {ticket.status}</Text>
-        <Text>Priorité: {ticket.priority}</Text>
-        <Text>category: {ticket.category}</Text>
-        <Text>Créateur du ticket: {createdByUser}</Text>
-        <Text>Date de création: {ticket.createdAt?.toDate().toLocaleString()}</Text>
-        <Text>Date de la dernière mise à jour: {ticket.updatedAt?.toDate().toLocaleString('fr-FR')}</Text>
-        {ticket.dueDate && (
-          <Text>{ticket.dueDate.toDate().toLocaleString()}</Text>
-        )}
-        {ticket.location && (
-          <Text>Coordonnées: {ticket.location}</Text>
-        )}
-        <View style={{ flexDirection: "row", marginTop: 20, marginBottom: 20 }}>
-          <Button theme="edit" label="Modifier" onPress={handleEdit} />
-          <Button theme="delete" label="Supprimer" onPress={handleDelete} />
-
+      <ScrollView style={styles.container}>
+        {/* En-tête */}
+        <View style={styles.headerContainer}>
+          <Text style={styles.headerTitle}>{ticket.title}</Text>
+          <View style={styles.statusPill}>
+            <Text style={styles.statusText}>{ticket.status}</Text>
+          </View>
         </View>
-        <View style={{ gap: 10, marginTop: 20 }}>
-          {role === "admin" && (
-            <RNButton title="Assigner le ticket" onPress={goToAssingationScreen} />
-          )}
-          {role === "support" && (
-            <RNButton title="Ajouter un commentaire" onPress={() => setCommentModalVisible(true)} />
 
+        {/* Section infos */}
+        <View style={styles.section}>
+          <Text numberOfLines={3} style={styles.description}>{ticket.description}</Text>
+
+          <View style={styles.detailRow}>
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Priorité</Text>
+              <Text style={styles.detailValue}>{ticket.priority}</Text>
+            </View>
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Catégorie</Text>
+              <Text style={styles.detailValue}>{ticket.category}</Text>
+            </View>
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.metaContainer}>
+            <View style={styles.metaRow}>
+              <Text style={styles.metaLabel}>Créé par</Text>
+              <Text style={styles.metaValue}>{createdByUser}</Text>
+            </View>
+            <View style={styles.metaRow}>
+              <Text style={styles.metaLabel}>Créé le</Text>
+              <Text style={styles.metaValue}>{ticket.createdAt?.toDate().toLocaleDateString('fr-FR')}</Text>
+            </View>
+            <View style={styles.metaRow}>
+              <Text style={styles.metaLabel}>Mise à jour</Text>
+              <Text style={styles.metaValue}>{ticket.updatedAt?.toDate().toLocaleDateString('fr-FR')}</Text>
+            </View>
+            {ticket.assignedTo && (
+              <View style={styles.metaRow}>
+                <Text style={styles.metaLabel}>Assinée à</Text>
+                <Text style={styles.metaValue}>{assignedToUser}</Text>
+              </View>
+            )}
+
+            {ticket.dueDate && (
+              <View style={styles.metaRow}>
+                <Text style={styles.metaLabel}>A répondre avant le </Text>
+                <Text style={styles.metaValue}>{ticket.dueDate.toDate().toLocaleDateString('fr-FR')}</Text>
+              </View>
+            )}
+
+            {ticket.location && (
+              <View style={styles.metaRow}>
+                <Text style={styles.metaLabel}>Lieu</Text>
+                <Text style={styles.metaValue}>{ticket.location}</Text>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* Actions principales */}
+        <View style={styles.actionRow}>
+            <Button theme="edit" label="Modifier" onPress={handleEdit} />
+            <Button theme="delete" label="Supprimer" onPress={handleDelete} />
+        </View>
+
+        {/* Actions secondaires */}
+        <View style={styles.secondaryActions}>
+          {role === "admin" && (
+            <RNButton
+              title="Assigner le ticket"
+              onPress={goToAssingationScreen}
+              color="#0066CC"
+            />
+          )}
+
+          {role === "support" && (
+            <RNButton
+              title="Ajouter un commentaire"
+              onPress={() => setCommentModalVisible(true)}
+              color="#0066CC"
+            />
           )}
 
           {hasComments && (
-            <RNButton title="Voir les commentaires" onPress={goToCommentsScreen} />
+            <RNButton
+              title="Voir les commentaires"
+              onPress={goToCommentsScreen}
+              color="#0066CC"
+            />
           )}
-
         </View>
-        <Button label="Retour à la liste" onPress={goToTicketsIndex} />
-      </View>
+        <View style={styles.backButton}>
+          <Button
+            label="Retour à la liste"
+            onPress={goToTicketsIndex}
+          />
+        </View>
+      </ScrollView>
+
+      {/* Modals */}
       {commentModalVisible && (
         <AddCommentModal
           visible={commentModalVisible}
           onClose={() => setCommentModalVisible(false)}
-          onSave={handleAddComment}
+          onSave={(text) => handleAddComment(text)}
         />
       )}
       {isEditModalVisible && (
@@ -218,17 +294,118 @@ const TicketDetails = () => {
   );
 };
 
+// Styles
 const styles = StyleSheet.create({
-  returnBt: {
-    marginTop: 20
+  container: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+    padding: 16,
   },
-  text: {
-    color: '#000000',
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
-  button: {
-    fontSize: 20,
-    textDecorationLine: 'underline',
-    color: '#fff',
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#333',
+    flex: 1,
+  },
+  statusPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 50,
+    marginLeft: 10,
+    backgroundColor: '#0066CC',
+  },
+  statusText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 12,
+  },
+  section: {
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 16,
+    marginBottom: 16,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  description: {
+    fontSize: 15,
+    color: '#555',
+    marginBottom: 16,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    marginBottom: 16,
+  },
+  detailItem: {
+    flex: 1,
+  },
+  detailLabel: {
+    fontSize: 13,
+    color: '#777',
+    marginBottom: 2,
+  },
+  detailValue: {
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#eee',
+    marginVertical: 12,
+  },
+  metaContainer: {
+    marginTop: 8,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    paddingVertical: 4,
+  },
+  metaLabel: {
+    width: 80,
+    fontSize: 13,
+    color: '#777',
+  },
+  metaValue: {
+    flex: 1,
+    fontSize: 14,
+    color: '#444',
+  },
+  actionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  editButton: {
+    flex: 1,
+    marginRight: 8,
+  },
+  deleteButton: {
+    flex: 1,
+    marginLeft: 8,
+  },
+  secondaryActions: {
+    marginBottom: 24,
+    gap: 10,
+  },
+  backButton: {
+    backgroundColor: '#999',
+    marginBottom: 20,
   },
 });
+
 export default TicketDetails;
