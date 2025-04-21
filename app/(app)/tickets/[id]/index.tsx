@@ -10,7 +10,6 @@ import AddCommentModal from "@/components/comments/commentForm";
 import { useAuth } from "@/context/ctx";
 import { addComment, listenToComments } from "@/services/comment.service";
 import { comments } from "@/types/comments";
-// import { sendPushNotification } from "@/services/pushNotifications"; 
 
 const TicketDetails = () => {
   const router = useRouter();
@@ -104,7 +103,6 @@ const TicketDetails = () => {
             const updated = await getDetailTicket(idTicket) as TicketFirst;
             if (updated) {
               setTicket(updated);
-              console.log("Ticket mis à jour avec succès:", updated);
             }
             setIsEditModalVisible(false);
           },
@@ -250,13 +248,13 @@ const TicketDetails = () => {
             />
           )}
 
-          {role === "support" && (
+          
             <RNButton
               title="Ajouter un commentaire"
               onPress={() => setCommentModalVisible(true)}
               color="#0066CC"
             />
-          )}
+          
 
           {hasComments && (
             <RNButton

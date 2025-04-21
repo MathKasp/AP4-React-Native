@@ -26,7 +26,7 @@ const AssignSupportScreen = () => {
     try {
       await assignSupportToTicket(idTicket, user.userId);
       Alert.alert("Succès", `${user.fullName} a été assigné au ticket.`);
-      router.back(); 
+      router.push(`/tickets/${idTicket}`); 
     } catch (error) {
       Alert.alert("Erreur", "Impossible d’assigner l’utilisateur.");
     }

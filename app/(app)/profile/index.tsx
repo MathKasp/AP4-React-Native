@@ -11,11 +11,11 @@ export default function Profile() {
         departement: "",
         role: "",
     });
-    
+
     useEffect(() => {
         async function fetchUserData() {
             if (!user?.uid) return;
-      
+
             try {
               const data = await getUserData(user.uid);
               setUserData(data);
@@ -23,28 +23,19 @@ export default function Profile() {
               console.error("Erreur lors du chargement des données utilisateur:", error);
             }
           }
-      
+
           fetchUserData();
         }, [user]);
 
     return (
         <View style={styles.container}>
-            {role === "admin" && (
-                <Text style={styles.label}>Vous êtes administrateur</Text>
-            )}
-            {role === "support" && (
-                <Text style={styles.label}>Vous êtes un support</Text>
-            )}
-            {role === "employee" && (
-                <Text style={styles.label}>Vous êtes employee</Text>
-            )}
             <Text style={styles.title}>Mon Profil</Text>
-           
+
             <View style={styles.infoBox}>
                 <Text style={styles.label}>Email:</Text>
                 <Text style={styles.value}>{userData.email}</Text>
             </View>
-            
+
             <View style={styles.infoBox}>
                 <Text style={styles.label}>Nom:</Text>
                 <Text style={styles.value}>{userData.fullName}</Text>
@@ -52,9 +43,9 @@ export default function Profile() {
 
             <View style={styles.infoBox}>
                 <Text style={styles.label}>Rôle:</Text>
-                <Text style={styles.value}>{userData.role}</Text>
+                <Text style={styles.value}>{userData.role === "employee" ? "employé" : role}</Text>
             </View>
-            
+
             <View style={styles.infoBox}>
                 <Text style={styles.label}>Département:</Text>
                 <Text style={styles.value}>{userData.departement}</Text>

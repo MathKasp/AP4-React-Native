@@ -4,9 +4,9 @@ export interface TicketTrue {
     id?: string;
     title: string;
     description: string;
-    status: 'new' | 'assigned' | 'in-progress' | 'resolved' | 'closed';
-    priority: 'low' | 'medium' | 'high' | 'critical';
-    category: 'hardware' | 'software' | 'network' | 'access' | 'other';
+    status: 'nouveau' | 'assigné' | 'en cours' | 'fermé';
+    priority: 'bas' | 'moyen' | 'élevé' | 'critique';
+    category: 'matériel' | 'logiciel' | 'réseau' | 'accès' | 'autre';
     createdBy: DocumentReference;
     assignedTo?: DocumentReference;
     createdAt: Timestamp;
@@ -24,9 +24,9 @@ export interface TicketTrue {
     id?:string,
     title: string;
     description: string;
-    status: 'new' | 'assigned' | 'in-progress' | 'resolved' | 'closed';
-    priority: 'low' | 'medium' | 'high' | 'critical';
-    category: 'hardware' | 'software' | 'network' | 'access' | 'other';
+    status: 'nouveau' | 'assigné' | 'en cours' | 'fermé';
+    priority: 'bas' | 'moyen' | 'élevé' | 'critique';
+    category: 'matériel' | 'logiciel' | 'réseau' | 'accès' | 'autre';
     createdBy?: string| DocumentReference;
     assignedTo?: string |DocumentReference;
     createdAt?: Timestamp;
@@ -39,4 +39,3 @@ export interface TicketTrue {
       version?: string;
     };
   }
-  
