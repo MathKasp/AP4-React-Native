@@ -1,3 +1,4 @@
+import { notifyLocalComment } from "@/components/notification/localNotification";
 import { db } from "@/config/config";
 import { comments } from "@/types/comments";
 import { dateOnly } from "@/utils/dateFormatter";
@@ -24,6 +25,7 @@ const addComment = async ({
       createdAt: Timestamp.fromDate(new Date),
     };
     await addDoc(commentsRef, newComment);
+    await notifyLocalComment(ticketId)
   };
 
    const listenToComments = (ticketId: string, setComments: (comments: comments[]) => void) => {

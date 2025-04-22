@@ -15,13 +15,13 @@ interface TicketListProps {
 // Helper function to get color based on priority
 const getPriorityColor = (priority: string): string => {
   switch (priority.toLowerCase()) {
-    case "critical":
+    case "critique":
       return "#880808";
-    case "high":
+    case "élevé":
       return "#FF5252";
-    case "medium":
+    case "moyen":
       return "#FFD740";
-    case "low":
+    case "bas":
       return "#4CAF50";
       
     default:
@@ -33,13 +33,13 @@ const getPriorityColor = (priority: string): string => {
 const getStatusColor = (status: string): string => {
   switch (status.toLowerCase()) {
     
-    case "new":
+    case "nouveau":
       return "#2196F3";
-    case "resolved":
+    case "assigné":
       return "#38d541"
-    case "in-progress":
+    case "en cours":
       return "#FF9800";
-    case "closed":
+    case "fermé":
       return "#dfe8e9";
     default:
       return "#9E9E9E";
